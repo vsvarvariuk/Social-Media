@@ -1,7 +1,10 @@
 from rest_framework import generics
+from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
 from rest_framework.settings import api_settings
+from rest_framework.views import APIView
 
 from user.serializers import UserSerializer, CustomUserSerializer
 
@@ -23,3 +26,14 @@ class UserUpdateView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+class LogoutView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            token = request.user.auth_token
+            token.delete()
+            return Response({"message": "You have successfully logged out."}, status=200)
+        except Token.DoesNotExist:
+            return Response({"message": "No token found."}, status=400)
