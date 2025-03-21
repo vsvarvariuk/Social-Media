@@ -1,5 +1,4 @@
 from rest_framework import serializers
-
 from media_service.models import Profile, Post, Like, Comment, Follow
 
 class ProfileSerializers(serializers.ModelSerializer):
