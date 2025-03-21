@@ -1,11 +1,20 @@
 from rest_framework import serializers
 from media_service.models import Profile, Post, Like, Comment, Follow
 
-class ProfileSerializers(serializers.ModelSerializer):
+class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ("id", "profile_picture", "birth_day", "location", "created_at")
+        fields = ("id", "bio", "profile_picture", "birth_day", "location", "created_at")
+
+
+class ProfileListSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(source="user.email")
+    last_name = serializers.CharField(source="user.last_name")
+
+    class Meta:
+        model = Profile
+        fields = ("first_name", "last_name")
 
 
 class PostSerializers(serializers.ModelSerializer):
