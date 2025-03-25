@@ -2,7 +2,6 @@ import pathlib
 import uuid
 from django.db import models
 from django.utils.text import slugify
-
 from social_media import settings
 
 
@@ -39,7 +38,7 @@ def upload_to_post(instance, filename):
 
 
 class Post(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+    profile = models.ForeignKey(Profile,
                                 on_delete=models.CASCADE,
                                 related_name="posts")
     content = models.TextField()
@@ -51,19 +50,24 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.created_at
+        return  self.created_at.strftime("%Y-%m-%d %H:%M:%S")
 
 
 class Like(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+    profile = models.ForeignKey(Profile,
                                 on_delete=models.CASCADE,
                                 related_name="likes")
 
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "post"], name="unique_like")
+        ]
 
 
 class Comment(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+    profile = models.ForeignKey(Profile,
                                 on_delete=models.CASCADE,
                                 related_name="comments")
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
@@ -88,7 +92,8 @@ class Follow(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["profile", "followed_profile"], name="unique_follow")
         ]
+
     def __str__(self):
         return (f"{self.profile.first_name} {self.profile.last_name} "
-                f"follow {self.followed_profile.first_name} {self.followed_profile.last_name}"
-                f"from {self.created_at.strftime("%Y-%m-%d %H:%M:%S")}")
+                f"follow {self.followed_profile.first_name} {self.followed_profile.last_name} "
+                f"from {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}")

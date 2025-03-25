@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, generics
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
@@ -49,17 +49,57 @@ class PostViewSet(viewsets.ModelViewSet):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
+    def get_queryset(self):
+        queryset = Post.objects.filter(profile=self.request.user.profiles)
+        return queryset
+
+    def perform_create(self, serializer):
+        return serializer.save(profile=self.request.user.profiles)
+
+
+class UserFollowersPost(generics.ListAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializers
+
+    def get_queryset(self):
+        follow_profile = Follow.objects.filter(profile=self.request.user.profiles).values_list("followed_profile", flat=True)
+        queryset = Post.objects.filter(profile__in=follow_profile)
+        return queryset
+
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializers
+
+    def perform_create(self, serializer):
+        serializer.save(profile=self.request.user.profiles)
 
 
 class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializers
 
+    def perform_create(self, serializer):
+        serializer.save(profile=self.request.user.profiles)
+
 
 class FollowViewSet(viewsets.ModelViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializers
+
+    def get_queryset(self):
+        queryset = Follow.objects.filter(profile=self.request.user.profiles)
+        return queryset
+
+
+    def perform_create(self, serializer):
+        return serializer.save(profile=self.request.user.profiles)
+
+
+class UserFollowersView(generics.ListAPIView):
+    queryset = Follow.objects.all()
+    serializer_class = FollowSerializers
+
+    def get_queryset(self):
+        queryset = Follow.objects.filter(followed_profile__user=self.request.user)
+        return queryset
