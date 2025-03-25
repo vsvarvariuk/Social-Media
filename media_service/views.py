@@ -67,6 +67,14 @@ class UserFollowersPost(generics.ListAPIView):
         return queryset
 
 
+
+class PostLikeUser(generics.ListAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializers
+
+    def get_queryset(self):
+        return Post.objects.filter(likes__profile__user=self.request.user)
+
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializers
