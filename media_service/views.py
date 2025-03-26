@@ -51,6 +51,9 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Post.objects.filter(profile=self.request.user.profiles)
+        search_field = self.request.query_params.get("search")
+        if search_field:
+            queryset = queryset.filter(content__icontains=search_field)
         return queryset
 
     def perform_create(self, serializer):
@@ -64,8 +67,10 @@ class UserFollowersPost(generics.ListAPIView):
     def get_queryset(self):
         follow_profile = Follow.objects.filter(profile=self.request.user.profiles).values_list("followed_profile", flat=True)
         queryset = Post.objects.filter(profile__in=follow_profile)
+        search_field = self.request.query_params.get("search")
+        if search_field:
+            queryset = queryset.filter(content__icontains=search_field)
         return queryset
-
 
 
 class PostLikeUser(generics.ListAPIView):
