@@ -1,3 +1,6 @@
+from drf_spectacular import openapi
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter, extend_schema_view
 from rest_framework import viewsets, generics, mixins
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -8,16 +11,13 @@ from media_service.models import (Profile,
                                   Like,
                                   Follow)
 
-from media_service.serializers import (
-    ProfileSerializer,
-    PostSerializers,
-    CommentSerializers,
-    LikeSerializers,
-    FollowSerializers,
-    ProfileListSerializer,
-    PostDetailSerializer,
-    FollowListSerializer,
-    FollowDetailSerializer)
+from media_service.serializers import (ProfileSerializer,
+                                       PostSerializers,
+                                       CommentSerializers,
+                                       LikeSerializers,
+                                       FollowSerializers, ProfileListSerializer,
+                                       PostDetailSerializer, FollowListSerializer, FollowDetailSerializer,
+                                       FollowersSerializer)
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
@@ -27,7 +27,29 @@ class ProfileViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        queryset = Profile.objects.all()
+        queryset = Profile.objects.filter(user=self.request.user)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework import generics
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from .models import Profile
+from .serializers import ProfileListSerializer
+
+
+class AllProfileView(generics.ListAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileListSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        queryset = Profile.objects.exclude(user=self.request.user)
         first_name = self.request.query_params.get("first_name")
         last_name = self.request.query_params.get("last_name")
         if first_name:
@@ -38,14 +60,21 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("first_name", OpenApiTypes.STR, description="Filter by first name"),
+            OpenApiParameter("last_name", OpenApiTypes.STR, description="Filter by last name"),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
-    def get_serializer_class(self):
-        if self.action == "list":
-            return ProfileListSerializer
-        return ProfileSerializer
 
+class AllProfileDetailView(generics.RetrieveAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -70,6 +99,16 @@ class PostViewSet(viewsets.ModelViewSet):
         return PostSerializers
 
 
+class AllPostView(generics.ListAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializers
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        return Post.objects.exclude(profile__user=self.request.user)
+
+
 class UserFollowersPost(generics.ListAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializers
@@ -77,11 +116,7 @@ class UserFollowersPost(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        follow_profile = Follow.objects.filter(
-            profile=self.request.user.profiles
-        ).values_list(
-            "followed_profile", flat=True
-        )
+        follow_profile = Follow.objects.filter(profile=self.request.user.profiles).values_list("followed_profile", flat=True)
         queryset = Post.objects.filter(profile__in=follow_profile)
         search_field = self.request.query_params.get("search")
         if search_field:
@@ -116,6 +151,11 @@ class PostLikeUserDetail(generics.RetrieveAPIView):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializers
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        return Comment.objects.filter(profile=self.request.user.profiles)
 
     def perform_create(self, serializer):
         serializer.save(profile=self.request.user.profiles)
@@ -124,6 +164,9 @@ class CommentViewSet(viewsets.ModelViewSet):
 class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializers
+
+    def get_queryset(self):
+        return Like.objects.filter(profile=self.request.user.profiles)
 
     def perform_create(self, serializer):
         serializer.save(profile=self.request.user.profiles)
@@ -151,7 +194,7 @@ class FollowViewSet(viewsets.ModelViewSet):
 
 class UserFollowersView(generics.ListAPIView):
     queryset = Follow.objects.all()
-    serializer_class = FollowListSerializer
+    serializer_class = FollowersSerializer
 
     def get_queryset(self):
         queryset = Follow.objects.filter(followed_profile__user=self.request.user)

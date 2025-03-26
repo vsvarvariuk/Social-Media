@@ -40,7 +40,7 @@ class Profile(models.Model):
 
 
 def upload_to_post(instance, filename):
-    new_file_name = (f"{slugify(instance.user.first_name)}"
+    new_file_name = (f"{slugify(instance.profile.user.first_name)}"
                      f"-{uuid.uuid4()}{pathlib.Path(filename).suffix}")
     return f"uploads/post/{new_file_name}"
 

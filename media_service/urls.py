@@ -11,20 +11,22 @@ from media_service.views import (
     UserFollowersPost,
     PostLikeUser,
     UserFollowerPostDetail,
-    PostLikeUserDetail
-)
+    PostLikeUserDetail, AllProfileView, AllProfileDetailView, AllPostView)
 
 router = routers.DefaultRouter()
-router.register("profiles", ProfileViewSet)
-router.register("posts", PostViewSet)
-router.register("likes", LikeViewSet)
-router.register("comments", CommentViewSet)
-router.register("follows", FollowViewSet)
+router.register("my-profile", ProfileViewSet)
+router.register("my-posts", PostViewSet)
+router.register("my-likes", LikeViewSet)
+router.register("my-comments", CommentViewSet)
+router.register("my-subscriptions", FollowViewSet)
 urlpatterns = [
     path("",include(router.urls)),
-    path("myfollowers/", UserFollowersView.as_view(), name="followers"),
-    path("myfollowers-posts/", UserFollowersPost.as_view(), name="myfollowers_post"),
-    path("myfollowers-posts/<int:pk>/", UserFollowerPostDetail.as_view(), name="myfollowers_post_detail"),
+    path("profiles/", AllProfileView.as_view(), name="all_profiles"),
+    path("profiles/<int:pk>/", AllProfileDetailView.as_view(), name="profile-detail"),
+    path("my-followers/", UserFollowersView.as_view(), name="followers"),
+    path("my-followers-posts/", UserFollowersPost.as_view(), name="my_followers_post"),
+    path("my-followers-posts/<int:pk>/", UserFollowerPostDetail.as_view(), name="my_followers_post_detail"),
+    path("all-posts/", AllPostView.as_view(), name="all_posts"),
     path("posts-like-me/", PostLikeUser.as_view(), name="like-post"),
     path("posts-like-me/<int:pk>/", PostLikeUserDetail.as_view(), name="like-post-detail")
 ]

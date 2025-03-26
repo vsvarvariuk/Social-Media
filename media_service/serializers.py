@@ -91,6 +91,14 @@ class FollowSerializers(serializers.ModelSerializer):
 
 
 class FollowListSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="followed_profile.full_name")
+
+    class Meta:
+        model = Follow
+        fields = ("id", "full_name")
+
+
+class FollowersSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source="profile.full_name")
 
     class Meta:
@@ -99,7 +107,7 @@ class FollowListSerializer(serializers.ModelSerializer):
 
 
 class FollowDetailSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer()
+    followed_profile = ProfileSerializer()
     class Meta:
         model = Follow
-        fields = ("id", "profile")
+        fields = ("id", "followed_profile")
