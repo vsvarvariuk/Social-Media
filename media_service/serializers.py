@@ -15,13 +15,6 @@ class ProfileListSerializer(serializers.ModelSerializer):
         fields = ("id", "first_name", "last_name")
 
 
-class PostSerializers(serializers.ModelSerializer):
-
-    class Meta:
-        model = Post
-        fields = ("id", "content", "image", "created_at")
-
-
 class LikeSerializers(serializers.ModelSerializer):
 
     class Meta:
@@ -34,6 +27,30 @@ class CommentSerializers(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ("id", "comment", "created_at", "post")
+
+
+class CommentPostSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(source="profile.first_name")
+    last_name = serializers.CharField(source="profile.last_name")
+
+    class Meta:
+        model = Comment
+        fields = ("comment", "first_name", "last_name")
+
+
+class PostSerializers(serializers.ModelSerializer):
+
+    class Meta:
+        model = Post
+        fields = ("id", "content", "image", "posts_comments", "created_at")
+
+
+class PostDetailSerializer(serializers.ModelSerializer):
+    posts_comments = CommentPostSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Post
+        fields = ("id", "content", "image", "posts_comments", "created_at")
 
 
 class FollowSerializers(serializers.ModelSerializer):

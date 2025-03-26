@@ -14,6 +14,7 @@ urlpatterns = [
     path("",include(router.urls)),
     path("myfollowers/", UserFollowersView.as_view(), name="followers"),
     path("myfollowers-posts/", UserFollowersPost.as_view(), name="myfollowers_post"),
+    path("myfollowers-posts/<int:pk>/", UserFollowersPost.as_view(), name="myfollowers_post_detail"),
     path("posts-like-me/", PostLikeUser.as_view(), name="like-post")
 ]
 app_name = "media-service"

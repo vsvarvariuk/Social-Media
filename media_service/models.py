@@ -70,7 +70,7 @@ class Comment(models.Model):
     profile = models.ForeignKey(Profile,
                                 on_delete=models.CASCADE,
                                 related_name="comments")
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="posts_comments")
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
