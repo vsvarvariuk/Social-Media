@@ -8,12 +8,16 @@ from media_service.models import (Profile,
                                   Like,
                                   Follow)
 
-from media_service.serializers import (ProfileSerializer,
-                                       PostSerializers,
-                                       CommentSerializers,
-                                       LikeSerializers,
-                                       FollowSerializers, ProfileListSerializer,
-                                       PostDetailSerializer)
+from media_service.serializers import (
+    ProfileSerializer,
+    PostSerializers,
+    CommentSerializers,
+    LikeSerializers,
+    FollowSerializers,
+    ProfileListSerializer,
+    PostDetailSerializer,
+    FollowListSerializer,
+    FollowDetailSerializer)
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
@@ -66,31 +70,48 @@ class PostViewSet(viewsets.ModelViewSet):
         return PostSerializers
 
 
-class UserFollowersPost(generics.ListAPIView, generics.RetrieveAPIView):
+class UserFollowersPost(generics.ListAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializers
-    lookup_field = "pk"
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        follow_profile = Follow.objects.filter(profile=self.request.user.profiles).values_list("followed_profile", flat=True)
+        follow_profile = Follow.objects.filter(
+            profile=self.request.user.profiles
+        ).values_list(
+            "followed_profile", flat=True
+        )
         queryset = Post.objects.filter(profile__in=follow_profile)
         search_field = self.request.query_params.get("search")
         if search_field:
             queryset = queryset.filter(content__icontains=search_field)
         return queryset
 
-    def get_serializer_class(self):
-        if self.kwargs.get(self.lookup_field):
-            return PostDetailSerializer
-        return PostSerializers
+
+class UserFollowerPostDetail(generics.RetrieveAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostDetailSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
 
 class PostLikeUser(generics.ListAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializers
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         return Post.objects.filter(likes__profile__user=self.request.user)
+
+
+class PostLikeUserDetail(generics.RetrieveAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostDetailSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
@@ -120,10 +141,17 @@ class FollowViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         return serializer.save(profile=self.request.user.profiles)
 
+    def get_serializer_class(self):
+        if self.action == "list":
+            return FollowListSerializer
+        if self.action == "retrieve":
+            return FollowDetailSerializer
+        return FollowSerializers
+
 
 class UserFollowersView(generics.ListAPIView):
     queryset = Follow.objects.all()
-    serializer_class = FollowSerializers
+    serializer_class = FollowListSerializer
 
     def get_queryset(self):
         queryset = Follow.objects.filter(followed_profile__user=self.request.user)
