@@ -1,13 +1,8 @@
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from django.db.models import Count
 from rest_framework import viewsets, generics
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework import generics
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-from .models import Profile
-from .serializers import ProfileListSerializer
 
 
 from media_service.models import Profile, Post, Comment, Like, Follow
@@ -110,11 +105,17 @@ class AllPostView(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        queryset = Post.objects.exclude(profile__user=self.request.user)
-        search_field = self.request.query_params.get("search")
+        queryset = (
+            Post.objects.exclude(profile__user=self.request.user)
+            .select_related("profile", "profile__user")
+            .prefetch_related("posts_comments", "likes")
+            .annotate(comment_count=Count("posts_comments"), like_count=Count("likes"))
+        )
+        search_field = self.request.query_params.get("search", "").strip()
         if search_field:
             queryset = queryset.filter(content__icontains=search_field)
-        return queryset
+
+        return queryset.order_by("-created_at")
 
     @extend_schema(
         parameters=[
@@ -166,6 +167,14 @@ class PostLikeUserDetail(generics.RetrieveAPIView):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
+    def get_queryset(self):
+        queryset = (
+            Post.objects.all()
+            .select_related("profile", "profile__user")
+            .prefetch_related("posts_comments", "likes__profile")
+        )
+        return queryset
+
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
@@ -196,8 +205,9 @@ class FollowViewSet(viewsets.ModelViewSet):
     serializer_class = FollowSerializers
 
     def get_queryset(self):
-        queryset = Follow.objects.filter(profile=self.request.user.profiles)
-        return queryset
+        return Follow.objects.select_related("profile", "followed_profile").filter(
+            profile=self.request.user.profiles
+        )
 
     def perform_create(self, serializer):
         return serializer.save(profile=self.request.user.profiles)
