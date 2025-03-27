@@ -27,6 +27,7 @@ class UserUpdateView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+
 class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -34,6 +35,8 @@ class LogoutView(APIView):
         try:
             token = request.user.auth_token
             token.delete()
-            return Response({"message": "You have successfully logged out."}, status=200)
+            return Response(
+                {"message": "You have successfully logged out."}, status=200
+            )
         except Token.DoesNotExist:
             return Response({"message": "No token found."}, status=400)

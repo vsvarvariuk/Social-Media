@@ -1,23 +1,29 @@
-from drf_spectacular import openapi
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiParameter, extend_schema_view
-from rest_framework import viewsets, generics, mixins
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework import viewsets, generics
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework import generics
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from .models import Profile
+from .serializers import ProfileListSerializer
 
-from media_service.models import (Profile,
-                                  Post,
-                                  Comment,
-                                  Like,
-                                  Follow)
 
-from media_service.serializers import (ProfileSerializer,
-                                       PostSerializers,
-                                       CommentSerializers,
-                                       LikeSerializers,
-                                       FollowSerializers, ProfileListSerializer,
-                                       PostDetailSerializer, FollowListSerializer, FollowDetailSerializer,
-                                       FollowersSerializer)
+from media_service.models import Profile, Post, Comment, Like, Follow
+
+from media_service.serializers import (
+    ProfileSerializer,
+    PostSerializers,
+    CommentSerializers,
+    LikeSerializers,
+    FollowSerializers,
+    ProfileListSerializer,
+    PostDetailSerializer,
+    FollowListSerializer,
+    FollowDetailSerializer,
+    FollowersSerializer,
+)
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
@@ -32,14 +38,6 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework import generics
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
-from .models import Profile
-from .serializers import ProfileListSerializer
 
 
 class AllProfileView(generics.ListAPIView):
@@ -62,12 +60,21 @@ class AllProfileView(generics.ListAPIView):
 
     @extend_schema(
         parameters=[
-            OpenApiParameter("first_name", OpenApiTypes.STR, description="Filter by first name"),
-            OpenApiParameter("last_name", OpenApiTypes.STR, description="Filter by last name"),
+            OpenApiParameter(
+                name="first_name",
+                type=str,
+                description="Filter by first_name",
+            ),
+            OpenApiParameter(
+                name="last_name",
+                type=str,
+                description="Filter bu last_name",
+            ),
         ]
     )
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+    def get(self, request, *args, **kwargs):
+        """Search profile for first_name or last_name"""
+        return super().get(request, *args, **kwargs)
 
 
 class AllProfileDetailView(generics.RetrieveAPIView):
@@ -85,9 +92,6 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Post.objects.filter(profile=self.request.user.profiles)
-        search_field = self.request.query_params.get("search")
-        if search_field:
-            queryset = queryset.filter(content__icontains=search_field)
         return queryset
 
     def perform_create(self, serializer):
@@ -106,7 +110,20 @@ class AllPostView(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        return Post.objects.exclude(profile__user=self.request.user)
+        queryset = Post.objects.exclude(profile__user=self.request.user)
+        search_field = self.request.query_params.get("search")
+        if search_field:
+            queryset = queryset.filter(content__icontains=search_field)
+        return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="search", type=str, description="Search by word"),
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        """Search post by word"""
+        return super().get(request, *args, **kwargs)
 
 
 class UserFollowersPost(generics.ListAPIView):
@@ -116,7 +133,9 @@ class UserFollowersPost(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        follow_profile = Follow.objects.filter(profile=self.request.user.profiles).values_list("followed_profile", flat=True)
+        follow_profile = Follow.objects.filter(
+            profile=self.request.user.profiles
+        ).values_list("followed_profile", flat=True)
         queryset = Post.objects.filter(profile__in=follow_profile)
         search_field = self.request.query_params.get("search")
         if search_field:
@@ -179,7 +198,6 @@ class FollowViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Follow.objects.filter(profile=self.request.user.profiles)
         return queryset
-
 
     def perform_create(self, serializer):
         return serializer.save(profile=self.request.user.profiles)

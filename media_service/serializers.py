@@ -1,15 +1,20 @@
 from rest_framework import serializers
 from media_service.models import Profile, Post, Like, Comment, Follow
 
+
 class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
         fields = (
-            "id", "bio",
-            "first_name", "last_name",
-            "profile_picture", "birth_day",
-            "location", "created_at"
+            "id",
+            "bio",
+            "first_name",
+            "last_name",
+            "profile_picture",
+            "birth_day",
+            "location",
+            "created_at",
         )
 
 
@@ -56,11 +61,7 @@ class PostSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = (
-            "id", "content",
-            "image", "comments",
-            "likes", "created_at"
-        )
+        fields = ("id", "content", "image", "comments", "likes", "created_at")
 
     def get_comments(self, obj):
         return obj.posts_comments.count()
@@ -77,9 +78,13 @@ class PostDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = (
-            "id", "user",
-            "content", "image",
-            "likes", "posts_comments", "created_at"
+            "id",
+            "user",
+            "content",
+            "image",
+            "likes",
+            "posts_comments",
+            "created_at",
         )
 
 
@@ -108,6 +113,7 @@ class FollowersSerializer(serializers.ModelSerializer):
 
 class FollowDetailSerializer(serializers.ModelSerializer):
     followed_profile = ProfileSerializer()
+
     class Meta:
         model = Follow
         fields = ("id", "followed_profile")
